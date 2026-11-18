@@ -33,7 +33,7 @@ export class StatsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Time Tracker";
+    return "VaultClock";
   }
 
   getIcon(): string {
@@ -82,7 +82,7 @@ export class StatsView extends ItemView {
 
     const header = wrapper.createDiv({ cls: "time-tracker-header" });
     header.createEl("h4", {
-      text: "Time Tracker",
+      text: "VaultClock",
       cls: "time-tracker-title",
     });
 

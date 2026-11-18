@@ -70,14 +70,14 @@ export default class TimeTrackerPlugin extends Plugin {
 
     this.statusBarEl = this.addStatusBarItem();
     this.statusBarEl.addClass("time-tracker-status-bar");
-    this.statusBarEl.setAttribute("aria-label", "Открыть статистику Time Tracker");
+    this.statusBarEl.setAttribute("aria-label", "Открыть статистику VaultClock");
     this.registerDomEvent(this.statusBarEl, "click", () => {
       void this.activateStatsView();
     });
     this.updateStatusBar();
 
     // Obsidian автоматически добавляет префикс "<Название плагина>: " в палитре команд,
-    // поэтому в палитре команды отображаются как "Time Tracker: Открыть статистику" и "Time Tracker: Сбросить статистику".
+    // поэтому в палитре команды отображаются как "VaultClock: Открыть статистику" и "VaultClock: Сбросить статистику".
     this.addCommand({
       id: "open-stats",
       name: "Открыть статистику",
