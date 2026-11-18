@@ -1,0 +1,55 @@
+.time-tracker-status-bar {
+  cursor: pointer;
+}
+
+.time-tracker-view {
+  padding: 16px;
+  color: var(--text-normal);
+}
+
+.time-tracker-title {
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.time-tracker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-tracker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background-color: var(--background-secondary);
+}
+
+.time-tracker-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.time-tracker-emoji {
+  line-height: 1;
+}
+
+.time-tracker-value {
+  font-weight: 600;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.time-tracker-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

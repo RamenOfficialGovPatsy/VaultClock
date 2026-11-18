@@ -1,0 +1,30 @@
+# Зависимости
+node_modules/
+
+# Сборка
+main.js
+main.js.map
+*.map
+
+# Артефакты сборки esbuild
+dist/
+build/
+
+# Кэш и временные файлы
+.cache/
+.tmp/
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Редакторы и ОС
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Тестовый vault для ручной проверки плагина
+test-vault/
+.vault-test/
