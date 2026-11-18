@@ -64,7 +64,7 @@ export default class TimeTrackerPlugin extends Plugin {
         new StatsView(
           leaf,
           () => this.storage.getData(),
-          () => this.flushElapsedSeconds()
+          () => this.flushElapsedSeconds(true)
         )
     );
 
@@ -99,6 +99,19 @@ export default class TimeTrackerPlugin extends Plugin {
       },
     });
 
+    // Сохранение при закрытии окна и при уходе приложения в фон (важно для мобильных ОС).
+    this.registerDomEvent(window, "beforeunload", () => {
+      this.flushAndSaveNow();
+    });
+
+    this.registerDomEvent(document, "visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        this.flushAndSaveNow();
+      }
+    });
+
+    // Защита от «двойного счёта» при перезапуске/краше: lastTickAt не сохраняется в data.json,
+    // при старте плагина всегда начинаем новый отсчёт с текущего момента без добавления времени простоя.
     this.lastTickAt = Date.now();
     this.registerInterval(
       window.setInterval(() => {
@@ -108,15 +121,17 @@ export default class TimeTrackerPlugin extends Plugin {
   }
 
   onunload(): void {
-    this.storage.cancelPendingSave();
-    this.flushElapsedSeconds(false);
-
-    // Принудительное сохранение при выгрузке плагина.
-    void this.storage.saveNow();
+    this.flushAndSaveNow();
   }
 
   private onTick(): void {
     this.flushElapsedSeconds(true);
+  }
+
+  private flushAndSaveNow(): void {
+    this.storage.cancelPendingSave();
+    this.flushElapsedSeconds(false);
+    void this.storage.saveNow();
   }
 
   private flushElapsedSeconds(scheduleSave = true): void {
