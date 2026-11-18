@@ -1,10 +1,11 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, setIcon, WorkspaceLeaf } from "obsidian";
 import { calculateStats } from "./stats";
 import { TimeTrackerData } from "./storage";
 import { formatDuration } from "./utils";
 
 export const STATS_VIEW_TYPE = "obsidian-time-tracker-stats";
 const VIEW_REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_ANIMATION_MS = 350;
 
 interface MetricRow {
   emoji: string;
@@ -14,11 +15,17 @@ interface MetricRow {
 
 export class StatsView extends ItemView {
   private readonly getData: () => TimeTrackerData;
+  private readonly onRefresh?: () => void;
   private refreshIntervalId: number | null = null;
 
-  constructor(leaf: WorkspaceLeaf, getData: () => TimeTrackerData) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    getData: () => TimeTrackerData,
+    onRefresh?: () => void
+  ) {
     super(leaf);
     this.getData = getData;
+    this.onRefresh = onRefresh;
   }
 
   getViewType(): string {
@@ -43,7 +50,7 @@ export class StatsView extends ItemView {
     this.contentEl.empty();
   }
 
-  render(): void {
+  render(animate = false): void {
     const stats = calculateStats(this.getData());
     const rows: MetricRow[] = [
       {
@@ -72,9 +79,25 @@ export class StatsView extends ItemView {
     container.empty();
 
     const wrapper = container.createDiv({ cls: "time-tracker-view" });
-    wrapper.createEl("h4", {
+
+    const header = wrapper.createDiv({ cls: "time-tracker-header" });
+    header.createEl("h4", {
       text: "Time Tracker",
       cls: "time-tracker-title",
+    });
+
+    const refreshButton = header.createEl("button", {
+      cls: "time-tracker-refresh-btn",
+      attr: {
+        type: "button",
+        "aria-label": "Обновить статистику",
+        title: "Обновить",
+      },
+    });
+    setIcon(refreshButton, "refresh-cw");
+    refreshButton.addEventListener("click", () => {
+      this.onRefresh?.();
+      this.render(true);
     });
 
     const list = wrapper.createDiv({ cls: "time-tracker-list" });
@@ -86,6 +109,15 @@ export class StatsView extends ItemView {
       labelWrap.createSpan({ text: row.label });
 
       rowEl.createSpan({ text: row.value, cls: "time-tracker-value" });
+    }
+
+    if (animate) {
+      refreshButton.addClass("is-spinning");
+      list.addClass("is-refreshed");
+      window.setTimeout(() => {
+        refreshButton.removeClass("is-spinning");
+        list.removeClass("is-refreshed");
+      }, REFRESH_ANIMATION_MS);
     }
   }
 

@@ -7,17 +7,68 @@
   color: var(--text-normal);
 }
 
+.time-tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .time-tracker-title {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 1.1em;
   font-weight: 600;
   color: var(--text-normal);
+}
+
+.time-tracker-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.time-tracker-refresh-btn:hover {
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
+}
+
+.time-tracker-refresh-btn.is-spinning svg {
+  animation: time-tracker-spin 0.35s ease-in-out;
 }
 
 .time-tracker-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.time-tracker-list.is-refreshed {
+  animation: time-tracker-fade-in 0.25s ease-out;
+}
+
+@keyframes time-tracker-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes time-tracker-fade-in {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .time-tracker-row {

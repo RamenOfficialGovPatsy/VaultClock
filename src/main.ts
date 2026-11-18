@@ -60,7 +60,12 @@ export default class TimeTrackerPlugin extends Plugin {
 
     this.registerView(
       STATS_VIEW_TYPE,
-      (leaf: WorkspaceLeaf) => new StatsView(leaf, () => this.storage.getData())
+      (leaf: WorkspaceLeaf) =>
+        new StatsView(
+          leaf,
+          () => this.storage.getData(),
+          () => this.flushElapsedSeconds()
+        )
     );
 
     this.statusBarEl = this.addStatusBarItem();
@@ -104,26 +109,32 @@ export default class TimeTrackerPlugin extends Plugin {
 
   onunload(): void {
     this.storage.cancelPendingSave();
-
-    // Добрать остаток секунд от последнего тика (ограничено 30с на случай долгой задержки таймера/сна).
-    const elapsedSeconds = Math.floor((Date.now() - this.lastTickAt) / 1000);
-    const remainderSeconds = Math.min(
-      TICK_INTERVAL_SECONDS,
-      Math.max(0, elapsedSeconds)
-    );
-    if (remainderSeconds > 0) {
-      this.storage.addSeconds(todayKey(), remainderSeconds);
-    }
+    this.flushElapsedSeconds(false);
 
     // Принудительное сохранение при выгрузке плагина.
     void this.storage.saveNow();
   }
 
   private onTick(): void {
-    this.lastTickAt = Date.now();
-    this.storage.addSeconds(todayKey(), TICK_INTERVAL_SECONDS);
-    this.storage.requestSave();
-    this.updateStatusBar();
+    this.flushElapsedSeconds(true);
+  }
+
+  private flushElapsedSeconds(scheduleSave = true): void {
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - this.lastTickAt) / 1000);
+    const deltaSeconds = Math.min(
+      TICK_INTERVAL_SECONDS,
+      Math.max(0, elapsedSeconds)
+    );
+    this.lastTickAt = now;
+
+    if (deltaSeconds > 0) {
+      this.storage.addSeconds(todayKey(), deltaSeconds);
+      if (scheduleSave) {
+        this.storage.requestSave();
+      }
+      this.updateStatusBar();
+    }
   }
 
   private updateStatusBar(): void {
