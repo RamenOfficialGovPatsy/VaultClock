@@ -7,7 +7,7 @@ An Obsidian plugin that tracks how much time you spend in the app and shows four
 ## 📑 Table of Contents
 
 - [✨ Features](#features)
-- [📸 Screenshots](#screenshots)
+- [📸 Screenshot](#screenshot)
 - [📦 Installation](#installation)
 - [🛠️ How It Works](#how-it-works)
 - [💡 Ideas & Feedback](#ideas)
@@ -27,20 +27,16 @@ An Obsidian plugin that tracks how much time you spend in the app and shows four
 - 🌓 Works in both dark and light Obsidian themes
 - 🗂️ Per-vault tracking — each vault has its own independent statistics
 - 🪶 Minimal code and dependencies: TypeScript + esbuild, no external libraries
+- 🌐 UI localization: Russian and English. The plugin language is automatically detected from the Obsidian app language
 
 ---
 
-<a id="screenshots"></a>
+<a id="screenshot"></a>
 
-## 📸 Screenshots
+## 📸 Screenshot
 
-### Status Bar
+![Screen](img/ENG.png)
 
-![Status Bar](docs/status-bar.png)
-
-### Stats Panel
-
-![Stats Panel](docs/stats-panel.png)
 
 ---
 
@@ -83,8 +79,6 @@ Then copy `main.js`, `manifest.json`, and `styles.css` to `<Your Vault>/.obsidia
 
 The plugin uses Obsidian CSS variables (`--background-secondary`, `--text-normal`, `--text-muted`), so it automatically adapts to the theme. There are no separate color settings — and none are needed.
 
-> **Note:** the plugin intentionally has no settings tab. Everything works out of the box.
-
 ---
 
 <a id="ideas"></a>
@@ -96,7 +90,3 @@ Have an idea for something missing? Want to suggest a new metric or display opti
 You can open an issue in the GitHub repository or write on the Obsidian forum.
 
 The plugin is intentionally minimalist, but if an idea fits the "simple and stable" philosophy — it will be considered. 🕰️
-
----
-
-**Enjoy! 🕰️**
