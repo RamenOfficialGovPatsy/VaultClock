@@ -1,4 +1,5 @@
 import { moment } from "obsidian";
+import { getTranslations, Language } from "./i18n";
 
 export const DATE_FORMAT = "YYYY-MM-DD";
 
@@ -21,18 +22,18 @@ export function sanitizeSeconds(value: unknown): number {
 }
 
 /**
- * Форматирует секунды строго в виде "Xч Yм", а при значении меньше 1 минуты — "< 1м".
- * Если часов 0 (например, 5 минут), выводится "0ч 5м" согласно формату "Xч Yм".
+ * Форматирует секунды в виде "Xч Yм" / "Xh Ym", а при значении меньше 1 минуты — "< 1м" / "< 1m".
  */
-export function formatDuration(totalSeconds: number): string {
+export function formatDuration(totalSeconds: number, lang: Language): string {
+  const t = getTranslations(lang).duration;
   const safeSeconds = sanitizeSeconds(totalSeconds);
   if (safeSeconds < 60) {
-    return "< 1м";
+    return t.lessThanMinute;
   }
 
   const totalMinutes = Math.floor(safeSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
-  return `${hours}ч ${minutes}м`;
+  return `${hours}${t.hoursSuffix} ${minutes}${t.minutesSuffix}`;
 }

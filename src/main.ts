@@ -1,4 +1,5 @@
-import { App, Modal, Plugin, WorkspaceLeaf } from "obsidian";
+import { App, Modal, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from "obsidian";
+import { getTranslations, isLanguage, Language } from "./i18n";
 import { STATS_VIEW_TYPE, StatsView } from "./StatsView";
 import { TimeTrackerStorage } from "./storage";
 import { formatDuration, sanitizeSeconds, todayKey } from "./utils";
@@ -7,31 +8,32 @@ const TICK_INTERVAL_SECONDS = 30;
 const TICK_INTERVAL_MS = TICK_INTERVAL_SECONDS * 1000;
 
 class ConfirmResetModal extends Modal {
+  private readonly lang: Language;
   private readonly onConfirm: () => Promise<void>;
 
-  constructor(app: App, onConfirm: () => Promise<void>) {
+  constructor(app: App, lang: Language, onConfirm: () => Promise<void>) {
     super(app);
+    this.lang = lang;
     this.onConfirm = onConfirm;
   }
 
   onOpen(): void {
+    const t = getTranslations(this.lang).resetModal;
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl("h3", { text: "Сбросить статистику?" });
-    contentEl.createEl("p", {
-      text: "Все сохранённые данные о времени в Obsidian будут удалены без возможности восстановления.",
-    });
+    contentEl.createEl("h3", { text: t.title });
+    contentEl.createEl("p", { text: t.description });
 
     const actions = contentEl.createDiv({ cls: "time-tracker-modal-actions" });
 
-    const cancelButton = actions.createEl("button", { text: "Отмена" });
+    const cancelButton = actions.createEl("button", { text: t.cancel });
     cancelButton.addEventListener("click", () => {
       this.close();
     });
 
     const confirmButton = actions.createEl("button", {
-      text: "Сбросить",
+      text: t.confirm,
       cls: "mod-warning",
     });
     confirmButton.addEventListener("click", () => {
@@ -46,6 +48,40 @@ class ConfirmResetModal extends Modal {
   private async handleConfirm(): Promise<void> {
     await this.onConfirm();
     this.close();
+  }
+}
+
+class VaultClockSettingTab extends PluginSettingTab {
+  private readonly plugin: TimeTrackerPlugin;
+
+  constructor(app: App, plugin: TimeTrackerPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  display(): void {
+    const { containerEl } = this;
+    const lang = this.plugin.getLanguage();
+    const t = getTranslations(lang).settings;
+
+    containerEl.empty();
+
+    new Setting(containerEl)
+      .setName(t.languageName)
+      .setDesc(t.languageDesc)
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("ru", "Русский")
+          .addOption("en", "English")
+          .setValue(lang)
+          .onChange(async (value) => {
+            if (!isLanguage(value)) {
+              return;
+            }
+            await this.plugin.setLanguage(value);
+            this.display();
+          })
+      );
   }
 }
 
@@ -64,23 +100,26 @@ export default class TimeTrackerPlugin extends Plugin {
         new StatsView(
           leaf,
           () => this.storage.getData(),
+          () => this.storage.getLanguage(),
           () => this.flushElapsedSeconds(true)
         )
     );
 
     this.statusBarEl = this.addStatusBarItem();
     this.statusBarEl.addClass("time-tracker-status-bar");
-    this.statusBarEl.setAttribute("aria-label", "Открыть статистику VaultClock");
     this.registerDomEvent(this.statusBarEl, "click", () => {
       void this.activateStatsView();
     });
     this.updateStatusBar();
 
-    // Obsidian автоматически добавляет префикс "<Название плагина>: " в палитре команд,
-    // поэтому в палитре команды отображаются как "VaultClock: Открыть статистику" и "VaultClock: Сбросить статистику".
+    this.addSettingTab(new VaultClockSettingTab(this.app, this));
+
+    const commandText = getTranslations(this.storage.getLanguage()).commands;
+
+    // Obsidian автоматически добавляет префикс "<Название плагина>: " в палитре команд.
     this.addCommand({
       id: "open-stats",
-      name: "Открыть статистику",
+      name: commandText.openStats,
       callback: () => {
         void this.activateStatsView();
       },
@@ -88,14 +127,24 @@ export default class TimeTrackerPlugin extends Plugin {
 
     this.addCommand({
       id: "reset-stats",
-      name: "Сбросить статистику",
+      name: commandText.resetStats,
       callback: () => {
-        new ConfirmResetModal(this.app, async () => {
+        new ConfirmResetModal(this.app, this.storage.getLanguage(), async () => {
           await this.storage.reset();
           this.lastTickAt = Date.now();
           this.updateStatusBar();
           this.refreshOpenStatsViews();
         }).open();
+      },
+    });
+
+    this.addCommand({
+      id: "toggle-language",
+      name: commandText.toggleLanguage,
+      callback: () => {
+        const nextLang: Language =
+          this.storage.getLanguage() === "ru" ? "en" : "ru";
+        void this.setLanguage(nextLang);
       },
     });
 
@@ -122,6 +171,16 @@ export default class TimeTrackerPlugin extends Plugin {
 
   onunload(): void {
     this.flushAndSaveNow();
+  }
+
+  getLanguage(): Language {
+    return this.storage.getLanguage();
+  }
+
+  async setLanguage(language: Language): Promise<void> {
+    await this.storage.setLanguage(language);
+    this.updateStatusBar();
+    this.refreshOpenStatsViews();
   }
 
   private onTick(): void {
@@ -156,9 +215,13 @@ export default class TimeTrackerPlugin extends Plugin {
     if (!this.statusBarEl) {
       return;
     }
+    const lang = this.storage.getLanguage();
+    const t = getTranslations(lang);
     const data = this.storage.getData();
     const todaySeconds = sanitizeSeconds(data.days[todayKey()]);
-    this.statusBarEl.setText(`⏱️ ${formatDuration(todaySeconds)}`);
+
+    this.statusBarEl.setAttribute("aria-label", t.statusBarAriaLabel);
+    this.statusBarEl.setText(`⏱️ ${formatDuration(todaySeconds, lang)}`);
   }
 
   private async activateStatsView(): Promise<void> {

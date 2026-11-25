@@ -1,15 +1,17 @@
 import { debounce, Debouncer, Plugin } from "obsidian";
+import { detectDefaultLanguage, isLanguage, Language } from "./i18n";
 import { sanitizeSeconds } from "./utils";
 
 export interface TimeTrackerData {
   days: Record<string, number>;
+  language: Language;
 }
 
 const SAVE_DEBOUNCE_MS = 60_000;
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-function createDefaultData(): TimeTrackerData {
-  return { days: {} };
+function createDefaultData(language: Language = detectDefaultLanguage()): TimeTrackerData {
+  return { days: {}, language };
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -18,20 +20,29 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Проверяет и очищает данные из data.json.
- * Невалидные значения секунд для ключей-дат сбрасываются в 0; ключи не в формате YYYY-MM-DD отбрасываются.
+ * Невалидные значения секунд сбрасываются в 0, отсутствующий язык заполняется дефолтным.
  */
 function sanitizeData(raw: unknown): { data: TimeTrackerData; changed: boolean } {
   if (!isPlainRecord(raw)) {
     return { data: createDefaultData(), changed: true };
   }
 
+  let changed = false;
+
+  let language: Language;
+  if (isLanguage(raw.language)) {
+    language = raw.language;
+  } else {
+    language = detectDefaultLanguage();
+    changed = true;
+  }
+
   const rawDays = raw.days;
   if (!isPlainRecord(rawDays)) {
-    return { data: createDefaultData(), changed: true };
+    return { data: createDefaultData(language), changed: true };
   }
 
   const cleanDays: Record<string, number> = {};
-  let changed = false;
 
   for (const [key, value] of Object.entries(rawDays)) {
     if (!DATE_KEY_PATTERN.test(key)) {
@@ -46,7 +57,7 @@ function sanitizeData(raw: unknown): { data: TimeTrackerData; changed: boolean }
     cleanDays[key] = sanitized;
   }
 
-  return { data: { days: cleanDays }, changed };
+  return { data: { days: cleanDays, language }, changed };
 }
 
 export class TimeTrackerStorage {
@@ -72,7 +83,6 @@ export class TimeTrackerStorage {
     const { data, changed } = sanitizeData(raw);
     this.data = data;
 
-    // Если data.json отсутствует или содержал повреждённые поля — сразу сохраняем валидный дефолт.
     if (changed) {
       await this.saveNow();
     }
@@ -80,6 +90,15 @@ export class TimeTrackerStorage {
 
   getData(): TimeTrackerData {
     return this.data;
+  }
+
+  getLanguage(): Language {
+    return this.data.language;
+  }
+
+  async setLanguage(language: Language): Promise<void> {
+    this.data.language = language;
+    await this.saveNow();
   }
 
   addSeconds(dateKey: string, seconds: number): void {
@@ -105,7 +124,8 @@ export class TimeTrackerStorage {
 
   async reset(): Promise<void> {
     this.cancelPendingSave();
-    this.data = createDefaultData();
+    // Сохраняем выбранный пользователем язык при сбросе статистики.
+    this.data = createDefaultData(this.data.language);
     await this.saveNow();
   }
 }

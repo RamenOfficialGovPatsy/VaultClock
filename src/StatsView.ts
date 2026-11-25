@@ -1,4 +1,5 @@
 import { ItemView, setIcon, WorkspaceLeaf } from "obsidian";
+import { getTranslations, Language } from "./i18n";
 import { calculateStats } from "./stats";
 import { TimeTrackerData } from "./storage";
 import { formatDuration } from "./utils";
@@ -15,16 +16,19 @@ interface MetricRow {
 
 export class StatsView extends ItemView {
   private readonly getData: () => TimeTrackerData;
+  private readonly getLanguage: () => Language;
   private readonly onRefresh?: () => void;
   private refreshIntervalId: number | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
     getData: () => TimeTrackerData,
+    getLanguage: () => Language,
     onRefresh?: () => void
   ) {
     super(leaf);
     this.getData = getData;
+    this.getLanguage = getLanguage;
     this.onRefresh = onRefresh;
   }
 
@@ -51,27 +55,30 @@ export class StatsView extends ItemView {
   }
 
   render(animate = false): void {
+    const lang = this.getLanguage();
+    const t = getTranslations(lang);
     const stats = calculateStats(this.getData());
+
     const rows: MetricRow[] = [
       {
         emoji: "⏱️",
-        label: "Общее время",
-        value: formatDuration(stats.totalSeconds),
+        label: t.metrics.total,
+        value: formatDuration(stats.totalSeconds, lang),
       },
       {
         emoji: "📅",
-        label: "Сегодня",
-        value: formatDuration(stats.todaySeconds),
+        label: t.metrics.today,
+        value: formatDuration(stats.todaySeconds, lang),
       },
       {
         emoji: "📆",
-        label: "За 7 дней",
-        value: formatDuration(stats.last7DaysSeconds),
+        label: t.metrics.last7Days,
+        value: formatDuration(stats.last7DaysSeconds, lang),
       },
       {
         emoji: "📅",
-        label: "За 30 дней",
-        value: formatDuration(stats.last30DaysSeconds),
+        label: t.metrics.last30Days,
+        value: formatDuration(stats.last30DaysSeconds, lang),
       },
     ];
 
@@ -90,8 +97,8 @@ export class StatsView extends ItemView {
       cls: "time-tracker-refresh-btn",
       attr: {
         type: "button",
-        "aria-label": "Обновить статистику",
-        title: "Обновить",
+        "aria-label": t.refreshAriaLabel,
+        title: t.refreshTitle,
       },
     });
     setIcon(refreshButton, "refresh-cw");
